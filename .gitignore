@@ -1,0 +1,65 @@
+# ==========================
+# Python
+# ==========================
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environment
+venv/
+.env
+
+# ==========================
+# macOS
+# ==========================
+.DS_Store
+
+# ==========================
+# IDE
+# ==========================
+.vscode/
+.idea/
+
+# ==========================
+# Jupyter
+# ==========================
+.ipynb_checkpoints/
+
+# ==========================
+# Logs
+# ==========================
+*.log
+logs/
+
+# ==========================
+# Environment Variables
+# ==========================
+.env
+
+# ==========================
+# ML Artifacts
+# ==========================
+ml/datasets/*
+
+!ml/datasets/.gitkeep
+
+ml/checkpoints/*
+
+!ml/checkpoints/.gitkeep
+
+# Generated audio
+generated_audio/
+
+# Temporary files
+tmp/
+temp/
+
+# Build
+build/
+dist/
+
+# ==========================
+# Testing
+# ==========================
+.pytest_cache/
+.mypy_cache/
