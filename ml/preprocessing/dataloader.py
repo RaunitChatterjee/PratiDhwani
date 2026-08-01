@@ -6,7 +6,7 @@ PyTorch DataLoader utilities.
 
 from torch.utils.data import DataLoader
 
-from ml.preprocessing.audio_dataset import ASVspoofDataset
+from ml.datasets.audio_dataset import ASVspoofDataset
 from ml.preprocessing.collator import Wav2VecCollator
 
 
