@@ -14,7 +14,7 @@ LA_ROOT = ASVSPOOF_ROOT / "LA" / "LA"
 
 PROTOCOL_DIR = LA_ROOT / "ASVspoof2019_LA_cm_protocols"
 
-OUTPUT_DIR = Path(__file__).resolve().parent.parent / "results"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / "metadata"
 OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 OUTPUT_CSV = OUTPUT_DIR / "asvspoof_metadata.csv"
