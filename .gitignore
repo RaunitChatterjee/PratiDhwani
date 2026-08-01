@@ -63,3 +63,7 @@ dist/
 # ==========================
 .pytest_cache/
 .mypy_cache/
+
+# Generated outputs
+ml/results/
+ml/checkpoints/
