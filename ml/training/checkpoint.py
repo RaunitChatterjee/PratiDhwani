@@ -4,26 +4,52 @@ PratiDhwani
 Checkpoint utilities.
 """
 
-from pathlib import Path
 import torch
 
 from config.settings import CHECKPOINT_DIR
 
 
-CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+class CheckpointManager:
 
+    def __init__(self):
 
-def save_checkpoint(model, optimizer, epoch, loss):
+        self.best_accuracy = 0.0
 
-    checkpoint = {
-        "epoch": epoch,
-        "model_state_dict": model.state_dict(),
-        "optimizer_state_dict": optimizer.state_dict(),
-        "loss": loss,
-    }
+    def save(
+        self,
+        model,
+        optimizer,
+        epoch,
+        accuracy,
+        filename="best_model.pt",
+    ):
 
-    path = CHECKPOINT_DIR / f"epoch_{epoch}.pt"
+        if accuracy <= self.best_accuracy:
+            return False
 
-    torch.save(checkpoint, path)
+        self.best_accuracy = accuracy
 
-    print(f"Checkpoint saved -> {path}")
+        checkpoint = {
+            "epoch": epoch,
+            "accuracy": accuracy,
+            "model_state_dict": model.state_dict(),
+            "optimizer_state_dict": optimizer.state_dict(),
+        }
+
+        save_path = CHECKPOINT_DIR / filename
+
+        torch.save(
+            checkpoint,
+            save_path,
+        )
+
+        print()
+        print("=" * 60)
+        print("New Best Model Saved")
+        print("=" * 60)
+        print(f"Epoch    : {epoch}")
+        print(f"Accuracy : {accuracy:.4f}")
+        print(f"Saved to : {save_path}")
+        print("=" * 60)
+
+        return True

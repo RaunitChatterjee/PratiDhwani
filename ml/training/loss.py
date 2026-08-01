@@ -1,7 +1,7 @@
 """
 PratiDhwani
 ------------
-Loss functions.
+Loss function.
 """
 
 import torch.nn as nn
@@ -9,4 +9,6 @@ import torch.nn as nn
 
 def get_loss():
 
-    return nn.CrossEntropyLoss()
+    return nn.CrossEntropyLoss(
+        label_smoothing=0.1
+    )

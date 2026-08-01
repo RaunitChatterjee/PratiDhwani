@@ -55,10 +55,10 @@ SAMPLE_RATE = 16000
 # TRAINING
 # =============================================================================
 
-BATCH_SIZE = 8
-NUM_WORKERS = 4
+BATCH_SIZE = 2
+NUM_WORKERS = 0
 LEARNING_RATE = 1e-5
-NUM_EPOCHS = 10
+NUM_EPOCHS = 1
 
 # =============================================================================
 # MODEL
@@ -67,3 +67,11 @@ NUM_EPOCHS = 10
 BASE_MODEL = "facebook/wav2vec2-base"
 
 MAX_AUDIO_LENGTH = 16000 * 10
+
+# =============================================================================
+# CREATE PROJECT DIRECTORIES
+# =============================================================================
+
+CHECKPOINT_DIR.mkdir(parents=True, exist_ok=True)
+FEATURE_DIR.mkdir(parents=True, exist_ok=True)
+RESULT_DIR.mkdir(parents=True, exist_ok=True)

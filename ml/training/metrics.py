@@ -12,11 +12,32 @@ from sklearn.metrics import (
 )
 
 
-def compute_metrics(y_true, y_pred):
+class Metrics:
 
-    return {
-        "accuracy": accuracy_score(y_true, y_pred),
-        "precision": precision_score(y_true, y_pred),
-        "recall": recall_score(y_true, y_pred),
-        "f1": f1_score(y_true, y_pred),
-    }
+    @staticmethod
+    def compute(
+        y_true,
+        y_pred,
+    ):
+
+        return {
+            "accuracy": accuracy_score(
+                y_true,
+                y_pred,
+            ),
+            "precision": precision_score(
+                y_true,
+                y_pred,
+                zero_division=0,
+            ),
+            "recall": recall_score(
+                y_true,
+                y_pred,
+                zero_division=0,
+            ),
+            "f1": f1_score(
+                y_true,
+                y_pred,
+                zero_division=0,
+            ),
+        }

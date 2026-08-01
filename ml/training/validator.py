@@ -1,32 +1,72 @@
 """
 PratiDhwani
 ------------
-Validation loop.
+Validation engine.
 """
 
 import torch
 
-from ml.training.metrics import compute_metrics
+from tqdm import tqdm
 
 
-def validate(model, loader, criterion, device):
+class Validator:
 
-    model.eval()
+    def __init__(
+        self,
+        model,
+        val_loader,
+        criterion,
+        device,
+    ):
 
-    losses = []
+        self.model = model
+        self.val_loader = val_loader
+        self.criterion = criterion
+        self.device = device
 
-    predictions = []
-    labels = []
+    @torch.no_grad()
+    def validate(self):
 
-    with torch.no_grad():
+        self.model.eval()
 
-        for batch in loader:
+        running_loss = 0.0
 
-            # Validation loop will be completed
-            # after batching is implemented.
-            pass
+        correct = 0
+        total = 0
 
-    return {
-        "loss": 0.0,
-        "metrics": {},
-    }
+        progress = tqdm(
+            self.val_loader,
+            desc="Validation",
+            leave=False,
+        )
+
+        for batch in progress:
+
+            input_values = batch["input_values"].to(self.device)
+            attention_mask = batch["attention_mask"].to(self.device)
+            labels = batch["labels"].to(self.device)
+
+            outputs = self.model(
+                input_values=input_values,
+                attention_mask=attention_mask,
+            )
+
+            loss = self.criterion(
+                outputs,
+                labels,
+            )
+
+            running_loss += loss.item()
+
+            predictions = outputs.argmax(dim=1)
+
+            correct += (predictions == labels).sum().item()
+
+            total += labels.size(0)
+
+        accuracy = correct / total
+
+        return (
+            running_loss / len(self.val_loader),
+            accuracy,
+        )

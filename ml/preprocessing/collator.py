@@ -6,7 +6,7 @@ Custom Wav2Vec2 Data Collator.
 
 import torch
 
-from ml.features.wav2vec_processor import Wav2VecProcessor
+from ml.models.wav2vec_processor import Wav2VecProcessor
 
 
 class Wav2VecCollator:
