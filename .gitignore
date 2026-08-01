@@ -67,3 +67,18 @@ dist/
 # Generated outputs
 ml/results/
 ml/checkpoints/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Model checkpoints
+ml/checkpoints/*.pt
+ml/checkpoints/*.pth
+
+# Debug datasets
+ml/metadata/train_small.csv
+ml/metadata/dev_small.csv
+
+# Virtual environment
+venv/

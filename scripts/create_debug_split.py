@@ -1,7 +1,7 @@
 """
 PratiDhwani
 ------------
-Create small train/dev splits for rapid debugging.
+Create balanced debug train/dev splits.
 """
 
 import sys
@@ -14,19 +14,44 @@ import pandas as pd
 
 METADATA_DIR = Path("ml/metadata")
 
+TRAIN_SIZE = 1000
+DEV_SIZE = 200
+
 train = pd.read_csv(METADATA_DIR / "train.csv")
 dev = pd.read_csv(METADATA_DIR / "dev.csv")
 
-# Random but reproducible
-train_small = train.sample(
-    n=1000,
-    random_state=42,
-).reset_index(drop=True)
 
-dev_small = dev.sample(
-    n=200,
-    random_state=42,
-).reset_index(drop=True)
+def balanced_sample(df, total_samples):
+
+    samples_per_class = total_samples // 2
+
+    bonafide = (
+        df[df["label"] == "bonafide"]
+        .sample(
+            n=samples_per_class,
+            random_state=42,
+        )
+    )
+
+    spoof = (
+        df[df["label"] == "spoof"]
+        .sample(
+            n=samples_per_class,
+            random_state=42,
+        )
+    )
+
+    balanced = (
+        pd.concat([bonafide, spoof])
+        .sample(frac=1, random_state=42)
+        .reset_index(drop=True)
+    )
+
+    return balanced
+
+
+train_small = balanced_sample(train, TRAIN_SIZE)
+dev_small = balanced_sample(dev, DEV_SIZE)
 
 train_small.to_csv(
     METADATA_DIR / "train_small.csv",
@@ -39,7 +64,13 @@ dev_small.to_csv(
 )
 
 print("=" * 60)
-print("Debug splits created")
+print("Balanced Debug Splits Created")
 print("=" * 60)
-print(f"Train : {len(train_small)}")
-print(f"Dev   : {len(dev_small)}")
+
+print()
+
+print(train_small["label"].value_counts())
+
+print()
+
+print(dev_small["label"].value_counts())
