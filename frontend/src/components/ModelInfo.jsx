@@ -1,3 +1,4 @@
+import { memo } from 'react'
 import { Cpu, Layers, Server } from 'lucide-react'
 
 const ITEMS = [
@@ -6,9 +7,9 @@ const ITEMS = [
   { icon: Server, label: 'Backend', value: 'FastAPI' },
 ]
 
-export default function ModelInfo() {
+function ModelInfo() {
   return (
-    <div className="rounded-2xl border border-line bg-card/60 p-6">
+    <div className="rounded-2xl border border-line bg-card/60 p-6 transition-colors duration-300 hover:border-primary/15">
       <p className="mb-5 font-mono text-[11px] uppercase tracking-wider text-muted">
         Model Information
       </p>
@@ -26,3 +27,5 @@ export default function ModelInfo() {
     </div>
   )
 }
+
+export default memo(ModelInfo)

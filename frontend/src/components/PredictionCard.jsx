@@ -1,16 +1,38 @@
-import { ShieldCheck, ShieldAlert } from 'lucide-react'
-import { formatPercent } from '../utils/formatters'
+import { memo } from 'react'
+import { ShieldCheck, ShieldAlert, Gauge } from 'lucide-react'
+import { confidenceTier } from '../utils/formatters'
+import { useCountUp } from '../hooks/useCountUp'
 
-export default function PredictionCard({ prediction, confidence, inferenceTimeMs }) {
+const TIER_STYLES = {
+  high: 'bg-success/15 text-success border-success/30',
+  medium: 'bg-warning/15 text-warning border-warning/30',
+  low: 'bg-danger/15 text-danger border-danger/30',
+  unknown: 'bg-line text-muted border-line',
+}
+
+function ConfidenceBadge({ confidence }) {
+  const tier = confidenceTier(confidence)
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-medium ${TIER_STYLES[tier.level]}`}
+    >
+      <Gauge className="h-3 w-3" strokeWidth={2} />
+      {tier.label}
+    </span>
+  )
+}
+
+function PredictionCard({ prediction, confidence, inferenceTimeMs }) {
   const isBonafide = prediction?.toLowerCase() === 'bonafide'
-
-  const accent = isBonafide ? 'success' : 'danger'
   const Icon = isBonafide ? ShieldCheck : ShieldAlert
+  const animatedConfidence = useCountUp(confidence, 1000)
 
   return (
     <div
-      className={`relative overflow-hidden rounded-2xl border p-8 ${
-        isBonafide ? 'border-success/25 bg-success/[0.06]' : 'border-danger/25 bg-danger/[0.06]'
+      className={`animate-fadeUp relative overflow-hidden rounded-2xl border p-6 transition-shadow duration-500 sm:p-8 ${
+        isBonafide
+          ? 'border-success/25 bg-success/[0.06] hover:shadow-[0_0_40px_-12px_rgba(34,197,94,0.35)]'
+          : 'border-danger/25 bg-danger/[0.06] hover:shadow-[0_0_40px_-12px_rgba(239,68,68,0.35)]'
       }`}
     >
       <div
@@ -19,13 +41,13 @@ export default function PredictionCard({ prediction, confidence, inferenceTimeMs
         }`}
       />
 
-      <div className="relative flex items-start justify-between">
+      <div className="relative flex items-start justify-between gap-4">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
             Forensic Verdict
           </p>
           <h2
-            className={`mt-2 font-display text-5xl font-bold tracking-tight ${
+            className={`mt-2 font-display text-4xl font-bold tracking-tight sm:text-5xl ${
               isBonafide ? 'text-success' : 'text-danger'
             }`}
           >
@@ -36,6 +58,9 @@ export default function PredictionCard({ prediction, confidence, inferenceTimeMs
               ? 'No synthetic artifacts detected in this recording.'
               : 'Synthetic generation artifacts detected in this recording.'}
           </p>
+          <div className="mt-4">
+            <ConfidenceBadge confidence={confidence} />
+          </div>
         </div>
 
         <div
@@ -50,7 +75,9 @@ export default function PredictionCard({ prediction, confidence, inferenceTimeMs
       <div className="relative mt-8 flex items-end justify-between border-t border-line pt-5">
         <div>
           <p className="font-mono text-[11px] uppercase tracking-wider text-muted">Confidence</p>
-          <p className="font-mono text-3xl font-semibold text-ink">{formatPercent(confidence)}</p>
+          <p className="font-mono text-3xl font-semibold text-ink font-tabular">
+            {animatedConfidence.toFixed(2)}%
+          </p>
         </div>
         {inferenceTimeMs !== null && inferenceTimeMs !== undefined && (
           <div className="text-right">
@@ -62,3 +89,5 @@ export default function PredictionCard({ prediction, confidence, inferenceTimeMs
     </div>
   )
 }
+
+export default memo(PredictionCard)

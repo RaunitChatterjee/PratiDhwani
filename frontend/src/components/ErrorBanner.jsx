@@ -12,7 +12,7 @@ export default function ErrorBanner({ message, onRetry }) {
       </div>
       <button
         onClick={onRetry}
-        className="flex items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-[13px] text-ink transition-colors hover:border-primary/40"
+        className="flex items-center gap-2 rounded-lg border border-line bg-card px-4 py-2 text-[13px] text-ink transition-all duration-200 hover:border-primary/40 active:scale-95"
       >
         <RefreshCcw className="h-3.5 w-3.5" />
         Try again

@@ -1,9 +1,10 @@
+import { memo } from 'react'
 import { History, FileAudio } from 'lucide-react'
 import { formatPercent, truncateFilename } from '../utils/formatters'
 
-export default function RecentAnalysis({ items }) {
+function RecentAnalysis({ items }) {
   return (
-    <div className="rounded-2xl border border-line bg-card/60 p-6">
+    <div className="rounded-2xl border border-line bg-card/60 p-6 transition-colors duration-300 hover:border-primary/15">
       <div className="mb-5 flex items-center gap-2">
         <History className="h-4 w-4 text-muted" />
         <p className="font-mono text-[11px] uppercase tracking-wider text-muted">
@@ -20,7 +21,10 @@ export default function RecentAnalysis({ items }) {
           {items.map((item) => {
             const isBonafide = item.prediction?.toLowerCase() === 'bonafide'
             return (
-              <div key={item.id} className="flex items-center justify-between gap-3 py-3 first:pt-0 last:pb-0">
+              <div
+                key={item.id}
+                className="animate-fadeUp flex items-center justify-between gap-3 py-3 transition-colors first:pt-0 last:pb-0 hover:bg-white/[0.02]"
+              >
                 <div className="flex min-w-0 items-center gap-2.5">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-bg">
                     <FileAudio className="h-3.5 w-3.5 text-muted" />
@@ -53,3 +57,5 @@ export default function RecentAnalysis({ items }) {
     </div>
   )
 }
+
+export default memo(RecentAnalysis)

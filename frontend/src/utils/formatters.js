@@ -26,6 +26,20 @@ export function formatFileSize(bytes) {
   return `${(kb / 1024).toFixed(2)} MB`
 }
 
+/**
+ * Maps a 0-100 confidence value to a qualitative tier used for the
+ * confidence badge. Thresholds are a UX convenience, not a model output.
+ */
+export function confidenceTier(value) {
+  if (value === null || value === undefined || Number.isNaN(value)) {
+    return { label: 'Unknown', level: 'unknown' }
+  }
+  const v = Number(value)
+  if (v >= 85) return { label: 'High confidence', level: 'high' }
+  if (v >= 60) return { label: 'Medium confidence', level: 'medium' }
+  return { label: 'Low confidence', level: 'low' }
+}
+
 export function truncateFilename(name, max = 28) {
   if (!name || name.length <= max) return name
   const extIndex = name.lastIndexOf('.')
