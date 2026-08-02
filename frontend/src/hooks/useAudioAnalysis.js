@@ -1,5 +1,6 @@
 import { useCallback, useState } from 'react'
 import { analyzeAudio } from '../services/api'
+import { validateAudioFile, classifyRequestError } from '../utils/errorHandling'
 
 // status: 'idle' | 'uploading' | 'analyzing' | 'done' | 'error'
 export function useAudioAnalysis({ onComplete } = {}) {
@@ -21,6 +22,14 @@ export function useAudioAnalysis({ onComplete } = {}) {
 
   const runAnalysis = useCallback(
     async (selectedFile) => {
+      const validationError = validateAudioFile(selectedFile)
+      if (validationError) {
+        setFile(selectedFile)
+        setError(validationError)
+        setStatus('error')
+        return
+      }
+
       setFile(selectedFile)
       setError(null)
       setResult(null)
@@ -40,11 +49,7 @@ export function useAudioAnalysis({ onComplete } = {}) {
         setStatus('done')
         onComplete?.({ file: selectedFile, result: data, inferenceTimeMs: elapsed })
       } catch (err) {
-        const message =
-          err.response?.data?.detail ||
-          err.message ||
-          'Unable to reach the PratiDhwani inference server.'
-        setError(message)
+        setError(classifyRequestError(err))
         setStatus('error')
       }
     },

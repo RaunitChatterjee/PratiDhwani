@@ -61,6 +61,11 @@ export default function UploadZone({ onFileSelected, disabled }) {
         role="button"
         tabIndex={0}
         aria-disabled={disabled}
+        aria-label={
+          accepted
+            ? 'Recording accepted, handing off to inference engine'
+            : 'Upload an audio recording. Drag and drop a .wav or .flac file, or press Enter to browse.'
+        }
         onClick={() => !disabled && !accepted && inputRef.current?.click()}
         onKeyDown={(e) => e.key === 'Enter' && !disabled && inputRef.current?.click()}
         onDragOver={(e) => {
@@ -134,7 +139,10 @@ export default function UploadZone({ onFileSelected, disabled }) {
       </div>
 
       {validationError && (
-        <div className="animate-fadeUp mt-3 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-[13px] text-danger">
+        <div
+          role="alert"
+          className="animate-fadeUp mt-3 flex items-center gap-2 rounded-lg border border-danger/30 bg-danger/10 px-4 py-2.5 text-[13px] text-danger"
+        >
           <AlertCircle className="h-4 w-4 shrink-0" />
           {validationError}
         </div>

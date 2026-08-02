@@ -30,17 +30,47 @@ export async function analyzeAudio(file, onUploadProgress) {
 }
 
 /**
- * Lightweight health check used to reflect live backend status in the navbar.
+ * Lightweight health check used to reflect live backend status. Tries a
+ * conventional /health route first for richer detail (model load state,
+ * device); if the backend doesn't expose one, falls back to a plain
+ * liveness probe against "/" and only reports what was actually returned —
+ * unreported fields are left null rather than guessed.
  */
-export async function checkBackendStatus() {
+export async function fetchBackendHealth() {
+  const started = performance.now()
+
   try {
-    await client.get('/', { timeout: 4000 })
-    return true
+    const res = await client.get('/health', { timeout: 5000 })
+    const latencyMs = Math.round(performance.now() - started)
+    const data = res.data || {}
+    return {
+      online: true,
+      modelLoaded: data.model_loaded ?? data.modelLoaded ?? null,
+      device: data.device ?? null,
+      latencyMs,
+    }
   } catch (err) {
-    // A 404 on "/" still proves the server is alive and responding.
-    if (err.response) return true
-    return false
+    if (err.response) {
+      // Server responded (even with 404) — it's alive, it just doesn't
+      // expose a /health route.
+      const latencyMs = Math.round(performance.now() - started)
+      return { online: true, modelLoaded: null, device: null, latencyMs }
+    }
+
+    try {
+      const rootStarted = performance.now()
+      await client.get('/', { timeout: 4000 })
+      const latencyMs = Math.round(performance.now() - rootStarted)
+      return { online: true, modelLoaded: null, device: null, latencyMs }
+    } catch {
+      return { online: false, modelLoaded: null, device: null, latencyMs: null }
+    }
   }
+}
+
+export async function checkBackendStatus() {
+  const health = await fetchBackendHealth()
+  return health.online
 }
 
 export default client

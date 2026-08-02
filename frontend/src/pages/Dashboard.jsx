@@ -1,48 +1,72 @@
 import { lazy, Suspense, useCallback, useMemo, useState } from 'react'
 import Hero from '../components/Hero'
 import UploadZone, { SelectedFileBar } from '../components/UploadZone'
-import AnalyzingIndicator from '../components/AnalyzingIndicator'
+import InvestigationTimeline from '../components/InvestigationTimeline'
 import PredictionCard from '../components/PredictionCard'
 import ProbabilityBars from '../components/ProbabilityBars'
+import ConfidenceExplanation from '../components/ConfidenceExplanation'
+import AudioMetadataCard from '../components/AudioMetadataCard'
+import ReportPanel from '../components/ReportPanel'
 import ModelInfo from '../components/ModelInfo'
 import RecentAnalysis from '../components/RecentAnalysis'
 import ErrorBanner from '../components/ErrorBanner'
 import { useAudioAnalysis } from '../hooks/useAudioAnalysis'
+import { useAudioMetadata } from '../hooks/useAudioMetadata'
+import { useLocalHistory } from '../hooks/useLocalHistory'
 import { formatTime } from '../utils/formatters'
+import { buildReportData } from '../utils/reportGenerator'
 
 // WaveSurfer.js is only needed once a result exists, so it's split into its
 // own chunk and loaded lazily rather than bundled into the initial page.
 const Waveform = lazy(() => import('../components/Waveform'))
 
 function WaveformSkeleton() {
-  return (
-    <div className="h-[141px] animate-pulse rounded-2xl border border-line bg-card/60" />
-  )
+  return <div className="h-[141px] animate-pulse rounded-2xl border border-line bg-card/60" />
 }
 
 export default function Dashboard() {
-  const [history, setHistory] = useState([])
+  const { items: history, addEntry, clear: clearHistory } = useLocalHistory()
+  const [timestampIso, setTimestampIso] = useState(null)
 
-  const handleComplete = useCallback(({ file, result }) => {
-    setHistory((prev) =>
-      [
-        {
-          id: `${file.name}-${Date.now()}`,
-          filename: file.name,
-          prediction: result.prediction,
-          confidence: result.confidence,
-          timestamp: formatTime(),
-        },
-        ...prev,
-      ].slice(0, 8)
-    )
-  }, [])
+  const handleComplete = useCallback(
+    ({ file, result }) => {
+      const nowIso = new Date().toISOString()
+      setTimestampIso(nowIso)
+      addEntry({
+        id: `${file.name}-${Date.now()}`,
+        filename: file.name,
+        prediction: result.prediction,
+        confidence: result.confidence,
+        timestamp: formatTime(),
+        createdAt: nowIso,
+      })
+    },
+    [addEntry]
+  )
 
   const analysisOptions = useMemo(() => ({ onComplete: handleComplete }), [handleComplete])
   const { status, progress, result, error, file, inferenceTimeMs, runAnalysis, reset } =
     useAudioAnalysis(analysisOptions)
 
+  const { metadata, isLoading: metadataLoading } = useAudioMetadata(file)
+
   const isBusy = status === 'uploading' || status === 'analyzing'
+  const isDone = status === 'done' && !!result
+
+  const report = useMemo(() => {
+    if (!isDone) return null
+    return buildReportData({
+      file,
+      result,
+      metadata,
+      inferenceTimeMs,
+      timestampIso: timestampIso || new Date().toISOString(),
+    })
+  }, [isDone, file, result, metadata, inferenceTimeMs, timestampIso])
+
+  const handleReset = useCallback(() => {
+    reset()
+  }, [reset])
 
   return (
     <>
@@ -56,16 +80,18 @@ export default function Dashboard() {
 
             {isBusy && (
               <>
-                <SelectedFileBar file={file} onClear={reset} />
-                <AnalyzingIndicator status={status} progress={progress} />
+                <SelectedFileBar file={file} onClear={handleReset} />
+                <InvestigationTimeline status={status} progress={progress} reportReady={false} />
               </>
             )}
 
-            {status === 'error' && <ErrorBanner message={error} onRetry={reset} />}
+            {status === 'error' && <ErrorBanner error={error} onRetry={handleReset} />}
 
-            {status === 'done' && result && (
+            {isDone && (
               <div className="flex flex-col gap-5 sm:gap-6">
-                <SelectedFileBar file={file} onClear={reset} />
+                <SelectedFileBar file={file} onClear={handleReset} />
+
+                <InvestigationTimeline status={status} progress={progress} reportReady />
 
                 <Suspense fallback={<WaveformSkeleton />}>
                   <Waveform
@@ -81,10 +107,13 @@ export default function Dashboard() {
                   confidence={result.confidence}
                   inferenceTimeMs={inferenceTimeMs}
                 />
+                <ConfidenceExplanation confidence={result.confidence} prediction={result.prediction} />
                 <ProbabilityBars bonafide={result.bonafide} spoof={result.spoof} />
 
+                {report && <ReportPanel report={report} />}
+
                 <button
-                  onClick={reset}
+                  onClick={handleReset}
                   className="self-start rounded-lg border border-line bg-card px-4 py-2 text-[13px] text-muted transition-all duration-200 hover:border-primary/40 hover:text-ink active:scale-95"
                 >
                   Analyze another recording
@@ -93,13 +122,22 @@ export default function Dashboard() {
             )}
           </div>
 
-          {/* Right column: model info + history */}
+          {/* Right column: model info + metadata + history */}
           <div className="flex flex-col gap-5 sm:gap-6">
             <div id="model">
               <ModelInfo />
             </div>
+
+            {file && (
+              <AudioMetadataCard
+                metadata={metadata}
+                isLoading={metadataLoading}
+                fileSize={file.size}
+              />
+            )}
+
             <div id="history">
-              <RecentAnalysis items={history} />
+              <RecentAnalysis items={history} onClear={clearHistory} />
             </div>
           </div>
         </div>
