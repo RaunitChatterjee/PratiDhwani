@@ -9,10 +9,20 @@ import {
 
 /**
  * Assembles the full forensic report object from the pieces already present
- * elsewhere in the app (prediction result, file, metadata). Pure data —
- * no network calls, no fabricated fields.
+ * elsewhere in the app (prediction result, file, metadata, and the
+ * heuristic forensic explanation). Pure data — no network calls, no
+ * fabricated fields. `forensicExplanation` is expected to already be
+ * computed (e.g. via generateForensicExplanation) so the on-screen card and
+ * the exported report always agree.
  */
-export function buildReportData({ file, result, metadata, inferenceTimeMs, timestampIso }) {
+export function buildReportData({
+  file,
+  result,
+  metadata,
+  inferenceTimeMs,
+  timestampIso,
+  forensicExplanation,
+}) {
   return {
     fileName: file?.name ?? 'Unknown',
     fileSize: file?.size ?? null,
@@ -28,6 +38,7 @@ export function buildReportData({ file, result, metadata, inferenceTimeMs, times
     timestampIso: timestampIso ?? new Date().toISOString(),
     modelName: 'facebook/wav2vec2-base',
     backend: 'FastAPI',
+    forensicExplanation: forensicExplanation ?? null,
   }
 }
 
@@ -47,6 +58,9 @@ export function downloadReportAsJSON(report) {
   URL.revokeObjectURL(url)
 }
 
+const PAGE_HEIGHT = 842
+const BOTTOM_MARGIN = 60
+
 export async function downloadReportAsPDF(report) {
   // Loaded on demand: jsPDF (and its optional html-rendering dependencies)
   // are only needed when the user actually asks for a PDF, so they're kept
@@ -54,7 +68,15 @@ export async function downloadReportAsPDF(report) {
   const { jsPDF } = await import('jspdf')
   const doc = new jsPDF({ unit: 'pt', format: 'a4' })
   const margin = 48
+  const contentWidth = 512
   let y = margin
+
+  const ensureSpace = (needed) => {
+    if (y + needed > PAGE_HEIGHT - BOTTOM_MARGIN) {
+      doc.addPage()
+      y = margin
+    }
+  }
 
   const isBonafide = report.prediction?.toLowerCase() === 'bonafide'
   const verdictColor = isBonafide ? [34, 197, 94] : [239, 68, 68]
@@ -72,8 +94,9 @@ export async function downloadReportAsPDF(report) {
   y += 28
 
   // Verdict block
+  ensureSpace(80)
   doc.setFillColor(...verdictColor)
-  doc.roundedRect(margin, y, 512, 56, 6, 6, 'F')
+  doc.roundedRect(margin, y, contentWidth, 56, 6, 6, 'F')
   doc.setTextColor(255, 255, 255)
   doc.setFont('helvetica', 'bold')
   doc.setFontSize(20)
@@ -84,18 +107,20 @@ export async function downloadReportAsPDF(report) {
   y += 80
 
   const section = (title, rows) => {
+    ensureSpace(40 + rows.length * 20)
     doc.setTextColor(15, 23, 42)
     doc.setFont('helvetica', 'bold')
     doc.setFontSize(12)
     doc.text(title, margin, y)
     y += 6
     doc.setDrawColor(226, 232, 240)
-    doc.line(margin, y, margin + 512, y)
+    doc.line(margin, y, margin + contentWidth, y)
     y += 18
 
     doc.setFont('helvetica', 'normal')
     doc.setFontSize(10.5)
     rows.forEach(([label, value]) => {
+      ensureSpace(20)
       doc.setTextColor(100, 116, 139)
       doc.text(label, margin, y)
       doc.setTextColor(15, 23, 42)
@@ -103,6 +128,19 @@ export async function downloadReportAsPDF(report) {
       y += 20
     })
     y += 14
+  }
+
+  const paragraph = (text, fontSize = 10) => {
+    doc.setFont('helvetica', 'normal')
+    doc.setFontSize(fontSize)
+    doc.setTextColor(71, 85, 105)
+    const lines = doc.splitTextToSize(text, contentWidth)
+    ensureSpace(lines.length * 14 + 6)
+    lines.forEach((line) => {
+      doc.text(line, margin, y)
+      y += 14
+    })
+    y += 8
   }
 
   section('File Information', [
@@ -128,12 +166,75 @@ export async function downloadReportAsPDF(report) {
     ['Timestamp', new Date(report.timestampIso).toLocaleString()],
   ])
 
+  // --- Forensic Explanation (heuristic, non-model-output layer) ----------
+  const fx = report.forensicExplanation
+  if (fx) {
+    ensureSpace(40)
+    doc.setTextColor(15, 23, 42)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(12)
+    doc.text('Forensic Explanation', margin, y)
+    y += 6
+    doc.setDrawColor(226, 232, 240)
+    doc.line(margin, y, margin + contentWidth, y)
+    y += 16
+
+    paragraph(
+      'The following is a heuristic explanation layer derived from confidence and recording metadata. It is not a direct output of the neural network.',
+      9
+    )
+
+    section('Explanation Summary', [
+      ['Confidence Class', fx.classification],
+      ['Prediction Reliability', fx.reliability],
+      ['Recording Quality', fx.audioQuality?.label ?? 'Unknown'],
+    ])
+
+    paragraph(fx.summary, 10.5)
+
+    ensureSpace(20)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(11)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Supporting Indicators', margin, y)
+    y += 18
+
+    fx.indicators?.forEach((indicator) => {
+      ensureSpace(32)
+      doc.setFont('helvetica', 'bold')
+      doc.setFontSize(10)
+      doc.setTextColor(15, 23, 42)
+      doc.text(`\u2022 ${indicator.title}`, margin, y)
+      y += 14
+      doc.setFont('helvetica', 'normal')
+      doc.setFontSize(9.5)
+      doc.setTextColor(100, 116, 139)
+      const lines = doc.splitTextToSize(indicator.description, contentWidth - 14)
+      lines.forEach((line) => {
+        ensureSpace(13)
+        doc.text(line, margin + 14, y)
+        y += 13
+      })
+      y += 6
+    })
+
+    y += 6
+    ensureSpace(20)
+    doc.setFont('helvetica', 'bold')
+    doc.setFontSize(10.5)
+    doc.setTextColor(15, 23, 42)
+    doc.text('Forensic Notes', margin, y)
+    y += 16
+    paragraph(fx.notes, 9.5)
+  }
+
+  ensureSpace(20)
   doc.setFontSize(9)
   doc.setTextColor(148, 163, 184)
   doc.text(
     'This report reflects a probabilistic model assessment and is not conclusive proof of authenticity.',
     margin,
-    780
+    y
   )
 
   doc.save(`pratidhwani-report-${safeFilenameFragment(report.fileName)}.pdf`)

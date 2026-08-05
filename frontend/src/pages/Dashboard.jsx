@@ -5,6 +5,7 @@ import InvestigationTimeline from '../components/InvestigationTimeline'
 import PredictionCard from '../components/PredictionCard'
 import ProbabilityBars from '../components/ProbabilityBars'
 import ConfidenceExplanation from '../components/ConfidenceExplanation'
+import ForensicExplanationCard from '../components/ForensicExplanationCard'
 import AudioMetadataCard from '../components/AudioMetadataCard'
 import ReportPanel from '../components/ReportPanel'
 import ModelInfo from '../components/ModelInfo'
@@ -15,6 +16,7 @@ import { useAudioMetadata } from '../hooks/useAudioMetadata'
 import { useLocalHistory } from '../hooks/useLocalHistory'
 import { formatTime } from '../utils/formatters'
 import { buildReportData } from '../utils/reportGenerator'
+import { generateForensicExplanation } from '../utils/forensicExplanation'
 
 // WaveSurfer.js is only needed once a result exists, so it's split into its
 // own chunk and loaded lazily rather than bundled into the initial page.
@@ -53,6 +55,19 @@ export default function Dashboard() {
   const isBusy = status === 'uploading' || status === 'analyzing'
   const isDone = status === 'done' && !!result
 
+  // Heuristic forensic explanation layer — computed once here so the
+  // on-screen card and the exported PDF/JSON always show identical data.
+  // Derived only from prediction/confidence (model outputs) and metadata
+  // (client-extracted), never fabricated.
+  const forensicExplanation = useMemo(() => {
+    if (!isDone) return null
+    return generateForensicExplanation({
+      prediction: result.prediction,
+      confidence: result.confidence,
+      metadata,
+    })
+  }, [isDone, result, metadata])
+
   const report = useMemo(() => {
     if (!isDone) return null
     return buildReportData({
@@ -61,8 +76,9 @@ export default function Dashboard() {
       metadata,
       inferenceTimeMs,
       timestampIso: timestampIso || new Date().toISOString(),
+      forensicExplanation,
     })
-  }, [isDone, file, result, metadata, inferenceTimeMs, timestampIso])
+  }, [isDone, file, result, metadata, inferenceTimeMs, timestampIso, forensicExplanation])
 
   const handleReset = useCallback(() => {
     reset()
@@ -107,6 +123,12 @@ export default function Dashboard() {
                   confidence={result.confidence}
                   inferenceTimeMs={inferenceTimeMs}
                 />
+
+                <ForensicExplanationCard
+                  explanation={forensicExplanation}
+                  confidence={result.confidence}
+                />
+
                 <ConfidenceExplanation confidence={result.confidence} prediction={result.prediction} />
                 <ProbabilityBars bonafide={result.bonafide} spoof={result.spoof} />
 
