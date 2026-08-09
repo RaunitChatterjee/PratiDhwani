@@ -1,0 +1,12 @@
+**/__pycache__
+**/*.pyc
+.git
+.env
+.env.local
+logs/*.log
+ml/checkpoints/*.pt
+ml/checkpoints/*.pth
+.pytest_cache
+.venv
+venv
+node_modules

@@ -1,0 +1,71 @@
+# PratiDhwani — full stack via Docker Compose
+#
+#   docker compose up --build
+#
+# Frontend:  http://localhost:5173
+# Backend:   http://localhost:8000  (docs at /docs, health at /health)
+#
+# Layout assumed by this file (adjust paths below if yours differs):
+#   .
+#   ├── backend/            FastAPI app + Dockerfile
+#   ├── ml/                 model code + ml/checkpoints/*.pt (gitignored, mounted below)
+#   ├── config/             shared config package
+#   ├── requirements.txt
+#   ├── frontend/           React/Vite app + Dockerfile   <-- rename if yours is "pratidhwani/"
+#   └── docker-compose.yml  (this file)
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    image: pratidhwani-backend:latest
+    container_name: pratidhwani-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - ENVIRONMENT=production
+      - LOG_LEVEL=INFO
+      - CHECKPOINT_PATH=/app/ml/checkpoints/best_model.pt
+      - CORS_ORIGINS=http://localhost:5173,http://localhost:80
+      - RATE_LIMIT_PER_MINUTE=30
+    env_file:
+      - .env
+    volumes:
+      # Checkpoints are large binary files that shouldn't live in the
+      # image — mount them from the host instead. Nothing about the
+      # trained model changes; this only affects how the file reaches
+      # the container.
+      - ./ml/checkpoints:/app/ml/checkpoints:ro
+      - backend_logs:/app/logs
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+    restart: unless-stopped
+    networks:
+      - pratidhwani
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    image: pratidhwani-frontend:latest
+    container_name: pratidhwani-frontend
+    ports:
+      - "5173:80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    restart: unless-stopped
+    networks:
+      - pratidhwani
+
+networks:
+  pratidhwani:
+    driver: bridge
+
+volumes:
+  backend_logs:
