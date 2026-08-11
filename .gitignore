@@ -5,7 +5,9 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+# ==========================
 # Virtual Environment
+# ==========================
 venv/
 .env
 
@@ -32,29 +34,35 @@ venv/
 logs/
 
 # ==========================
-# Environment Variables
-# ==========================
-.env
-
-# ==========================
-# ML Artifacts
+# ML Datasets
 # ==========================
 ml/datasets/*
-
 !ml/datasets/.gitkeep
 
+# ==========================
+# ML Model Checkpoints
+# ==========================
 ml/checkpoints/*
-
 !ml/checkpoints/.gitkeep
 
-# Generated audio
+# Explicit large model formats
+*.pt
+*.pth
+
+# ==========================
+# Generated Audio
+# ==========================
 generated_audio/
 
-# Temporary files
+# ==========================
+# Temporary Files
+# ==========================
 tmp/
 temp/
 
+# ==========================
 # Build
+# ==========================
 build/
 dist/
 
@@ -64,21 +72,13 @@ dist/
 .pytest_cache/
 .mypy_cache/
 
-# Generated outputs
+# ==========================
+# Generated ML Results
+# ==========================
 ml/results/
-ml/checkpoints/
 
-# Python cache
-__pycache__/
-*.pyc
-
-# Model checkpoints
-ml/checkpoints/*.pt
-ml/checkpoints/*.pth
-
-# Debug datasets
+# ==========================
+# Debug / Small Development Datasets
+# ==========================
 ml/metadata/train_small.csv
 ml/metadata/dev_small.csv
-
-# Virtual environment
-venv/
